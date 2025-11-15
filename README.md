@@ -168,6 +168,16 @@ See `requirements.txt` for the complete list of dependencies. Key packages:
 - numpy
 - pillow
 
+## Web Demo
+
+Try the live demo: [License Plate Detection on Hugging Face](https://huggingface.co/spaces/nitheshcodes/license-plate-detection)
+
+To run the web interface locally:
+```bash
+pip install gradio
+python app.py
+```
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit issues and pull requests.
