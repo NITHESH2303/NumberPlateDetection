@@ -1,6 +1,16 @@
 # Number Plate Detection System
 
+[![Hugging Face Spaces](https://img.shields.io/badge/🤗%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/nitheshcodes/license-plate-detection)
+[![Demo](https://img.shields.io/badge/Demo-Live-success)](https://huggingface.co/spaces/nitheshcodes/license-plate-detection)
+
 An intelligent system for detecting and recognizing vehicle license plates from images and video streams using deep learning.
+
+> **🚀 [Try Live Demo](https://huggingface.co/spaces/nitheshcodes/license-plate-detection)** - Upload an image and see instant results!
+
+## Demo
+
+![Demo](https://raw.githubusercontent.com/NITHESH2303/NumberPlateDetection/main/output/demo.gif)
+*Real-time license plate detection and text recognition*
 
 ## Overview
 
@@ -167,16 +177,6 @@ See `requirements.txt` for the complete list of dependencies. Key packages:
 - easyocr
 - numpy
 - pillow
-
-## Web Demo
-
-Try the live demo: [License Plate Detection on Hugging Face](https://huggingface.co/spaces/nitheshcodes/license-plate-detection)
-
-To run the web interface locally:
-```bash
-pip install gradio
-python app.py
-```
 
 ## Contributing
 
