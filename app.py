@@ -42,13 +42,10 @@ def recognize_plate_easyocr(img, coords, reader, region_threshold):
     return plate
 
 
-def detect_plates(image):
-    """Detect license plates and recognize text"""
-    if image is None:
-        return None, "Please upload an image"
-    
+def process_frame(frame):
+    """Process a single frame for detection"""
     # Convert to RGB
-    img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     
     # Run detection
     results = model(img)
@@ -108,36 +105,140 @@ def detect_plates(image):
     return output_img, result_text
 
 
-# Create Gradio interface
-demo = gr.Interface(
-    fn=detect_plates,
-    inputs=gr.Image(type="numpy", label="Upload Image"),
-    outputs=[
-        gr.Image(type="numpy", label="Detection Result"),
-        gr.Textbox(label="Detected Plates", lines=5)
-    ],
-    title="🚗 License Plate Detection System",
-    description="""
-    Upload an image to detect and recognize license plates.
+def detect_plates(image):
+    """Detect license plates in image"""
+    if image is None:
+        return None, "Please upload an image"
+    return process_frame(image)
+
+
+def detect_plates_video(video_path):
+    """Detect license plates in video"""
+    if video_path is None:
+        return None, "❌ Please upload a video file"
     
-    **Features:**
-    - Detects multiple plates in a single image
+    try:
+        cap = cv2.VideoCapture(video_path)
+        
+        if not cap.isOpened():
+            return None, "❌ Error: Could not open video file"
+        
+        width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        fps = int(cap.get(cv2.CAP_PROP_FPS))
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        
+        if width == 0 or height == 0 or fps == 0:
+            cap.release()
+            return None, "❌ Error: Invalid video format"
+        
+        # Create output video
+        output_path = "output_video.mp4"
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        out = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
+        
+        frame_count = 0
+        detection_count = 0
+        
+        print(f"Processing video: {total_frames} frames at {fps} fps")
+        
+        while cap.isOpened():
+            ret, frame = cap.read()
+            if not ret:
+                break
+            
+            frame_count += 1
+            
+            # Process every 3rd frame for speed
+            if frame_count % 3 == 0:
+                processed_frame, result_text = process_frame(frame)
+                out.write(processed_frame)
+                if "Detected" in result_text and "plate" in result_text:
+                    detection_count += 1
+            else:
+                out.write(frame)
+        
+        cap.release()
+        out.release()
+        
+        result_msg = f"✅ Processed {frame_count} frames\n"
+        result_msg += f"🎯 Frames with detections: {detection_count}"
+        
+        return output_path, result_msg
+        
+    except Exception as e:
+        return None, f"❌ Error processing video: {str(e)}"
+
+
+# Create Gradio interface with tabs
+with gr.Blocks(theme=gr.themes.Soft()) as demo:
+    gr.Markdown("""
+    # 🚗 License Plate Detection System
+    
+    Upload an image or video to detect and recognize license plates using YOLOv5 and EasyOCR.
+    """)
+    
+    with gr.Tabs():
+        with gr.Tab("📷 Image"):
+            with gr.Row():
+                with gr.Column():
+                    image_input = gr.Image(type="numpy", label="Upload Image")
+                    image_button = gr.Button("Detect Plates", variant="primary")
+                with gr.Column():
+                    image_output = gr.Image(type="numpy", label="Detection Result")
+                    image_text = gr.Textbox(label="Detected Plates", lines=5)
+            
+            gr.Examples(
+                examples=[
+                    ["test_img/IMG_2899.JPG"],
+                    ["test_img/IMG_2900.JPG"],
+                    ["test_img/IMG_2901.JPG"]
+                ],
+                inputs=image_input
+            )
+            
+            image_button.click(
+                fn=detect_plates,
+                inputs=image_input,
+                outputs=[image_output, image_text]
+            )
+        
+        with gr.Tab("🎥 Video"):
+            gr.Markdown("""
+            ### Video Processing
+            Upload a video file to detect license plates frame-by-frame.
+            
+            **Note:** Video processing may take 1-2 minutes depending on length.
+            """)
+            
+            with gr.Row():
+                with gr.Column():
+                    video_input = gr.Video(label="Upload Video", sources=["upload"])
+                    video_button = gr.Button("🎬 Process Video", variant="primary", size="lg")
+                with gr.Column():
+                    video_output = gr.Video(label="Processed Video")
+                    video_text = gr.Textbox(label="Processing Info", lines=3)
+            
+            video_button.click(
+                fn=detect_plates_video,
+                inputs=video_input,
+                outputs=[video_output, video_text]
+            )
+    
+    gr.Markdown("""
+    ### Features
+    - Detects multiple plates in a single frame
     - Recognizes text using OCR
     - Works with various lighting conditions
     
-    **How to use:**
-    1. Upload an image containing vehicles with license plates
-    2. Wait for processing (takes 5-10 seconds)
-    3. View detected plates with bounding boxes and recognized text
-    """,
-    examples=[
-        ["test_img/IMG_2899.JPG"],
-        ["test_img/IMG_2900.JPG"],
-        ["test_img/IMG_2901.JPG"]
-    ],
-    theme=gr.themes.Soft(),
-    allow_flagging="never"
-)
+    ### How to use
+    1. Choose Image or Video tab
+    2. Upload your file
+    3. Click the detect/process button
+    4. View results with bounding boxes and recognized text
+    
+    [View source code on GitHub](https://github.com/NITHESH2303/NumberPlateDetection)
+    """)
 
 if __name__ == "__main__":
     demo.launch()
